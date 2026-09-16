@@ -3,16 +3,21 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/metro_station.dart';
+import '../utils/metro_order.dart';
 
 /// Loads the open Tehran Metro station dataset.
 ///
-/// The source project publishes stations in JSON and is licensed under ODbL-1.0.
-/// We intentionally load the source instead of maintaining a second database in this app.
+/// Coordinates and station metadata stay in the source dataset, while the
+/// UI order is controlled locally so the app always shows line 1 → line 7.
 class MetroService {
   static const String sourceUrl =
       'https://raw.githubusercontent.com/mostafa-kheibary/tehran-metro-data/main/data/stations.json';
 
-  Future<List<MetroStation>> loadStations() async {
+  List<MetroStation>? _memoryCache;
+
+  Future<List<MetroStation>> loadStations({bool forceRefresh = false}) async {
+    if (!forceRefresh && _memoryCache != null) return _memoryCache!;
+
     final response = await http.get(
       Uri.parse(sourceUrl),
       headers: const {'Accept': 'application/json'},
@@ -32,7 +37,10 @@ class MetroService {
       if (key is String && value is Map) {
         try {
           final station = MetroStation.fromJson(key, value.cast<String, dynamic>());
-          if (station.latitude.abs() <= 90 && station.longitude.abs() <= 180) {
+          if (station.nameFa.trim().isNotEmpty &&
+              station.latitude.abs() <= 90 &&
+              station.longitude.abs() <= 180 &&
+              station.lines.isNotEmpty) {
             stations.add(station);
           }
         } catch (_) {
@@ -45,8 +53,19 @@ class MetroService {
       throw Exception('هیچ ایستگاه مترویی از منبع دریافت نشد.');
     }
 
-    // The source can contain graph-related data; sorting makes the UI predictable.
-    stations.sort((a, b) => a.nameFa.compareTo(b.nameFa));
-    return stations;
+    _memoryCache = List<MetroStation>.unmodifiable(stations);
+    return _memoryCache!;
+  }
+
+  List<MetroStation> stationsForLine(List<MetroStation> stations, int line) {
+    final result = stations.where((station) => station.lines.contains(line)).toList();
+    result.sort((a, b) {
+      final ai = stationOrderIndex(line, a.nameEn);
+      final bi = stationOrderIndex(line, b.nameEn);
+      final orderCompare = ai.compareTo(bi);
+      if (orderCompare != 0) return orderCompare;
+      return a.nameFa.compareTo(b.nameFa);
+    });
+    return result;
   }
 }
