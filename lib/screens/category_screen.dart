@@ -2,19 +2,33 @@ import 'package:flutter/material.dart';
 
 import '../models/metro_station.dart';
 import '../models/place_category.dart';
+import '../utils/metro_ui.dart';
 import 'nearby_places_screen.dart';
 
 class CategoryScreen extends StatelessWidget {
   final MetroStation station;
+  final int selectedLine;
 
-  const CategoryScreen({super.key, required this.station});
+  const CategoryScreen({
+    super.key,
+    required this.station,
+    required this.selectedLine,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final lineColor = metroLineColor(selectedLine);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('اطراف ${station.nameFa}'),
         centerTitle: true,
+        title: Text(
+          'اطراف ${station.nameFa}',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -22,8 +36,10 @@ class CategoryScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0B5FFF), Color(0xFF4F8BFF)],
+              gradient: LinearGradient(
+                colors: [lineColor, lineColor.withValues(alpha: 0.72)],
+                begin: Alignment.centerRight,
+                end: Alignment.centerLeft,
               ),
               borderRadius: BorderRadius.circular(24),
             ),
@@ -32,7 +48,11 @@ class CategoryScreen extends StatelessWidget {
                 const CircleAvatar(
                   radius: 28,
                   backgroundColor: Colors.white24,
-                  child: Icon(Icons.directions_subway_rounded, color: Colors.white, size: 30),
+                  child: Icon(
+                    Icons.directions_subway_rounded,
+                    color: Colors.white,
+                    size: 30,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -41,12 +61,23 @@ class CategoryScreen extends StatelessWidget {
                     children: [
                       Text(
                         station.nameFa,
-                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        station.lines.isEmpty ? 'ایستگاه مترو' : station.lines.map((e) => 'خط $e').join(' • '),
-                        style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
+                        station.lines.isEmpty
+                            ? 'ایستگاه مترو'
+                            : station.lines
+                                .map((e) => 'خط $e')
+                                .join(' • '),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -112,19 +143,31 @@ class _CategoryCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(category.icon, style: const TextStyle(fontSize: 38)),
               const SizedBox(height: 12),
-              Text(category.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text(
+                category.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 category.subtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),

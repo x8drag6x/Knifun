@@ -43,7 +43,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final stations = await _metroService.loadStations(forceRefresh: forceRefresh);
+      final stations = await _metroService.loadStations(
+        forceRefresh: forceRefresh,
+      );
       if (!mounted) return;
       setState(() {
         _allStations = stations;
@@ -129,44 +131,39 @@ class _HomeScreenState extends State<HomeScreen> {
             else if (_error != null)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _ErrorState(message: _error!, onRetry: () => _loadStations(forceRefresh: true)),
+                child: _ErrorState(
+                  message: _error!,
+                  onRetry: () => _loadStations(forceRefresh: true),
+                ),
               )
             else if (_visibleCount == 0)
               const SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text('ایستگاهی با این عبارت پیدا نشد.')),
+                child: Center(
+                  child: Text('ایستگاهی با این عبارت پیدا نشد.'),
+                ),
               )
             else
-              for (var line = 1; line <= 7; line++) ...[
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: _LineHeader(
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                sliver: SliverList.separated(
+                  itemCount: 7,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final line = index + 1;
+                    final stations = _visibleStationsForLine(line);
+
+                    // Hide lines that have no matching stations while searching.
+                    if (stations.isEmpty) return const SizedBox.shrink();
+
+                    return _LineExpansionTile(
                       line: line,
-                      stationCount: _visibleStationsForLine(line).length,
-                    ),
-                  ),
+                      stations: stations,
+                      searching: _searchController.text.trim().isNotEmpty,
+                    );
+                  },
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  sliver: SliverList.separated(
-                    itemCount: _visibleStationsForLine(line).length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 9),
-                    itemBuilder: (context, index) {
-                      final station = _visibleStationsForLine(line)[index];
-                      return _StationCard(
-                        station: station,
-                        line: line,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => CategoryScreen(station: station)),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
+              ),
           ],
         ),
       ),
@@ -190,7 +187,13 @@ class _HeroCard extends StatelessWidget {
           end: Alignment.bottomLeft,
           colors: [Color(0xFF0B5FFF), Color(0xFF193B9D)],
         ),
-        boxShadow: const [BoxShadow(color: Color(0x220B5FFF), blurRadius: 24, offset: Offset(0, 10))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x220B5FFF),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -201,18 +204,35 @@ class _HeroCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.directions_subway_rounded, color: Colors.white, size: 30),
+            child: const Icon(
+              Icons.directions_subway_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
           ),
           const SizedBox(width: 14),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('کجا می‌خواهی بروی؟', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                Text(
+                  'کجا می‌خواهی بروی؟',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
                 SizedBox(height: 4),
-                Text('ایستگاه مترو را انتخاب کن', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+                Text(
+                  'ایستگاه مترو را انتخاب کن',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 SizedBox(height: 7),
-                Text('بعد می‌توانی مکان‌های اطراف را پیدا کنی و برایشان مسیر بگیری.', style: TextStyle(color: Colors.white70, height: 1.45)),
+                Text(
+                  'بعد می‌توانی مکان‌های اطراف را پیدا کنی و برایشان مسیر بگیری.',
+                  style: TextStyle(color: Colors.white70, height: 1.45),
+                ),
               ],
             ),
           ),
@@ -224,8 +244,17 @@ class _HeroCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                child: Text('$totalStations', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Text(
+                  '$totalStations',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
           ],
@@ -235,42 +264,99 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-class _LineHeader extends StatelessWidget {
+class _LineExpansionTile extends StatelessWidget {
   final int line;
-  final int stationCount;
+  final List<MetroStation> stations;
+  final bool searching;
 
-  const _LineHeader({required this.line, required this.stationCount});
+  const _LineExpansionTile({
+    required this.line,
+    required this.stations,
+    required this.searching,
+  });
 
   @override
   Widget build(BuildContext context) {
     final color = metroLineColor(line);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 40,
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
+        ),
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            dividerColor: Colors.transparent,
+            splashColor: color.withValues(alpha: 0.08),
+            highlightColor: color.withValues(alpha: 0.04),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('خط $line', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 17)),
-                const SizedBox(height: 2),
-                Text('$stationCount ایستگاه', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
-              ],
+          child: ExpansionTile(
+            initiallyExpanded: searching,
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 4,
             ),
+            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            expandedAlignment: Alignment.centerRight,
+            collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            leading: Container(
+              width: 12,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            title: Text(
+              'خط $line',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+                fontSize: 17,
+              ),
+            ),
+            subtitle: Text(
+              '${stations.length} ایستگاه',
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
+            ),
+            trailing: Icon(Icons.expand_more_rounded, color: color),
+            children: [
+              ...stations.map(
+                (station) => Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _StationCard(
+                    station: station,
+                    line: line,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CategoryScreen(
+                            station: station,
+                            selectedLine: line,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
-          Icon(Icons.train_rounded, color: color),
-        ],
+        ),
       ),
     );
   }
@@ -281,7 +367,11 @@ class _StationCard extends StatelessWidget {
   final int line;
   final VoidCallback onTap;
 
-  const _StationCard({required this.station, required this.line, required this.onTap});
+  const _StationCard({
+    required this.station,
+    required this.line,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +395,10 @@ class _StationCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topRight,
                     end: Alignment.bottomLeft,
-                    colors: [color.withValues(alpha: 0.20), color.withValues(alpha: 0.07)],
+                    colors: [
+                      color.withValues(alpha: 0.20),
+                      color.withValues(alpha: 0.07),
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: color.withValues(alpha: 0.20)),
@@ -317,7 +410,14 @@ class _StationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(station.nameFa, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    Text(
+                      station.nameFa,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 5),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -326,17 +426,30 @@ class _StationCard extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(left: 6),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.black.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Text('تغییر خط', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                              child: const Text(
+                                'تغییر خط',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ),
                         Text(
                           'خط $line',
-                          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ],
                     ),
@@ -369,11 +482,18 @@ class _ErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.wifi_off_rounded, size: 54),
             const SizedBox(height: 16),
-            const Text('دریافت ایستگاه‌ها ناموفق بود', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const Text(
+              'دریافت ایستگاه‌ها ناموفق بود',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 8),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 18),
-            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('تلاش دوباره')),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('تلاش دوباره'),
+            ),
           ],
         ),
       ),
