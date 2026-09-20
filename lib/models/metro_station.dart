@@ -1,6 +1,8 @@
 import 'package:latlong2/latlong.dart';
 
-/// Represents one Tehran Metro station.
+/// One Tehran Metro station.
+///
+/// `lines` can contain more than one line for interchange stations.
 class MetroStation {
   final String id;
   final String nameFa;
@@ -27,13 +29,15 @@ class MetroStation {
     final lines = (json['lines'] as List?)
             ?.whereType<num>()
             .map((value) => value.toInt())
+            .where((line) => line >= 1 && line <= 7)
+            .toSet()
             .toList(growable: false) ??
         const <int>[];
 
     return MetroStation(
       id: key,
-      nameFa: (translations?['fa'] ?? json['name'] ?? key).toString(),
-      nameEn: (json['name'] ?? key).toString(),
+      nameFa: (translations?['fa'] ?? json['name'] ?? key).toString().trim(),
+      nameEn: (json['name'] ?? key).toString().trim(),
       lines: lines,
       latitude: double.parse(json['latitude'].toString()),
       longitude: double.parse(json['longitude'].toString()),

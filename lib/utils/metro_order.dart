@@ -1,0 +1,221 @@
+/// Display order published for Tehran Metro lines.
+///
+/// The app keeps the live station coordinates from the open station dataset,
+/// while these lists only control the visual order: first line 1, then line 2,
+/// and so on, with stations shown from one end of a line to the other.
+const Map<int, List<String>> metroLineStationOrder = {
+  1: [
+    'Tajrish',
+    'Gheytariyeh',
+    'Shahid Sadr',
+    'Gholhak',
+    'Shariati',
+    'Mirdamad',
+    'Shahid Haghani',
+    'Shahid Hemmat',
+    'Mosalla Imam Khomeini',
+    'Shahid Beheshti',
+    'Shahid Mofatteh',
+    'Shohada-ye Haftom-e Tir',
+    'Taleghani',
+    'Darvazeh Dowlat',
+    'Saadi',
+    'Imam Khomeini',
+    'Panzdah-e-Khordad (15th of Khordad)',
+    'Khayam',
+    'Meydan-e Mohammadiyeh',
+    'Shush',
+    'Payane Jonoob',
+    'Shahid Bokharaei',
+    'Ali Abad',
+    'Javanmard-e-Ghassab',
+    'Shahr-e-Rey',
+    'Palayeshgah',
+    'Shahed - Bagher Shahr',
+    'Haram-e Motahhar-e Emam Khomeini',
+    'Kahrizak',
+  ],
+  2: [
+    'Pardis Mosaferi Shargh',
+    'Shahid Babaeian',
+    'Farhangsara',
+    'Tehranpars',
+    'Shahid Bagheri',
+    'Elm-o-Sanat University',
+    'Sarsabz',
+    'Janbazan',
+    'Fadak',
+    'Sabalan',
+    'Shahid Madani',
+    'Imam Hossein',
+    'Darvazeh Shemiran',
+    'Baharestan',
+    'Mellat',
+    'Imam Khomeini',
+    'Hasan Abad',
+    'Daneshgah-e Emam Ali',
+    'Meydan-e Horr',
+    'Shahid Navvab-e Safavi',
+    'Shademan',
+    'Daneshgah-e Sharif',
+    'Tarasht',
+    'Tehran (Sadeghiyeh)',
+  ],
+  3: [
+    'Ghaem',
+    'Shahid Mahallati',
+    'Aghdasiyeh',
+    'Nobonyad',
+    'Hossein Abad',
+    'Heravi',
+    'Shahid Zeyn-o-ddin',
+    'Khajeh Abdollah-e Ansari',
+    'Shahid Sayyad-e Shirazi',
+    'Shahid Ghoddoosi',
+    'Sohrevardi',
+    'Shahid Beheshti',
+    'Mirzaye Shirazi',
+    'Meydan-e Jahad',
+    'Meydan-e Vali Asr',
+    'Teatr-e Shahr',
+    'Moniriyeh',
+    'Mahdiyeh',
+    'Rahahan',
+    'Javadiyeh',
+    'Zam Zam',
+    "Shahrak-e Shari'ati",
+    'Abdol Abad',
+    "Ne'mat Abad",
+    'Azadegan',
+  ],
+  4: [
+    'Shahid Kolahdooz',
+    'Nirooye Havaei',
+    'Nabard',
+    'Piroozi',
+    'Ebn-e Sina',
+    'Meydan-e Shohada',
+    'Darvazeh Shemiran',
+    'Darvazeh Dowlat',
+    'Ferdowsi',
+    'Teatr-e Shahr',
+    'Meydan-e Enghelab-e Eslami',
+    'Towhid',
+    'Shademan',
+    'Doctor Habib-o-llah',
+    'Ostad Moein',
+    'Meydan-e Azadi',
+    'Bimeh',
+    'Shahrak-e Ekbatan',
+    'Eram-e Sabz',
+    'Allameh Jafari',
+    'Ayatollah Kashani',
+    'Chahar Bagh',
+  ],
+  5: [
+    'Tehran (Sadeghiyeh)',
+    'Eram-e Sabz',
+    'Varzeshgah-e Azadi',
+    'Chitgar',
+    'Iran Khodro',
+    'Vardavard',
+    'Garmdarreh',
+    'Atmosfer',
+    'Karaj',
+    'Mohammad Shahr',
+    'Golshahr',
+    'Shahid Fakhrizadeh (Mammut)',
+    'Shahid Sepahbod Qasem Soleimani',
+  ],
+  6: [
+    'Shahid Arman Aliverdi (Kouhsar)',
+    'Shohada-ye Kan',
+    'Shahran',
+    'Shahr-e Ziba',
+    'Ayatollah Kashani',
+    'Shahid Sattari',
+    'Shahid Ashrafi Esfahani',
+    'Yadegar-e Emam',
+    'Marzdaran',
+    'Shahrak-e Azmayesh',
+    'Daneshgah-e Tarbiat Modares',
+    'Karegar',
+    'Boostan-e Laleh',
+    'Meydan-e Vali Asr',
+    'Maryam-e Moghaddas (Shahid Nejatollahi)',
+    'Shohada-ye haftom-e Tir',
+    'Bahar Shiraz',
+    'Sarbaz Vatan',
+    'Imam Hossein',
+    'Meydan-e Shohada',
+    'Amir Kabir',
+    'Shohada-ye Hefdah-e Shahrivar',
+    'Meydan-e Khorasan',
+    'Shahid Rezaei',
+    'Besat',
+    'Kiyan Shahr',
+    'Dowlat Abad',
+    'Cheshme Ali',
+    'Ebn-e Babvieh',
+    'Meydan-e Hazrat-e Abdol Azim',
+    'Haram-e Hazrat-e Abdol Azim',
+    'Shahr-e-Rey',
+  ],
+  7: [
+    'Daneshgah-e Azad Eslami',
+    'Chahar Divari',
+    'Meydan-e Ketab',
+    'Shahid Dadman',
+    "Meydan-e San'at",
+    'Borj-e Milad-e Tehran',
+    'Boostan-e Goftegou',
+    'Daneshgah-e Tarbiat Modares',
+    'Modafean Salamat',
+    'Towhid',
+    'Shahid Navvab-e Safavi',
+    'Roudaki',
+    'Komeyl',
+    'Beryanak',
+    'Helal-e Ahmar',
+    'Mahdiyeh',
+    'Meydan-e Mohammadiyeh',
+    'Molavi',
+    'Meydan-e Ghiam',
+    'Shohada-ye Hefdah-e Shahrivar',
+    'Chehel Tan-e Doolab',
+    'Ahang',
+    'Basij',
+    'Varzeshgah-e Takhti',
+  ],
+};
+
+String normalizeStationName(String value) {
+  return value
+      .trim()
+      .toLowerCase()
+      .replaceAll('’', "'")
+      .replaceAll('ـ', '')
+      .replaceAll(RegExp(r'[.,()]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+int stationOrderIndex(int line, String nameEn) {
+  final items = metroLineStationOrder[line] ?? const <String>[];
+  final normalized = normalizeStationName(nameEn);
+  for (var i = 0; i < items.length; i++) {
+    if (normalizeStationName(items[i]) == normalized) return i;
+  }
+
+  // A few data sources use small spelling variants. Token-based fallback keeps
+  // the station near its expected position without changing its stored name.
+  final tokens = normalized.split(' ').where((token) => token.length >= 4).toSet();
+  var best = items.length + 100;
+  for (var i = 0; i < items.length; i++) {
+    final candidate = normalizeStationName(items[i]);
+    final candidateTokens = candidate.split(' ').toSet();
+    final overlap = tokens.intersection(candidateTokens).length;
+    if (overlap >= 2) best = best < i ? best : i;
+  }
+  return best;
+}

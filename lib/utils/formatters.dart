@@ -2,7 +2,9 @@ String formatDistance(double meters) {
   if (meters < 1000) {
     return '${meters.round()} متر';
   }
-  return '${(meters / 1000).toStringAsFixed(1)} کیلومتر';
+  final kilometers = meters / 1000;
+  final digits = kilometers % 1 == 0 ? 0 : 1;
+  return '${kilometers.toStringAsFixed(digits)} کیلومتر';
 }
 
 String lineText(List<int> lines) {

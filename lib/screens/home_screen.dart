@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/metro_station.dart';
 import '../services/metro_service.dart';
+import '../utils/metro_ui.dart';
 import 'category_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,35 +17,40 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
 
   List<MetroStation> _allStations = const [];
-  List<MetroStation> _filteredStations = const [];
+  Map<int, List<MetroStation>> _stationsByLine = const {};
   bool _loading = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_refreshSearch);
     _loadStations();
-    _searchController.addListener(_filter);
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_refreshSearch)
+      ..dispose();
     super.dispose();
   }
 
-  Future<void> _loadStations() async {
+  Future<void> _loadStations({bool forceRefresh = false}) async {
     setState(() {
       _loading = true;
       _error = null;
     });
 
     try {
-      final stations = await _metroService.loadStations();
+      final stations = await _metroService.loadStations(forceRefresh: forceRefresh);
       if (!mounted) return;
       setState(() {
         _allStations = stations;
-        _filteredStations = stations;
+        _stationsByLine = {
+          for (var line = 1; line <= 7; line++)
+            line: _metroService.stationsForLine(stations, line),
+        };
         _loading = false;
       });
     } catch (error) {
@@ -56,19 +62,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _filter() {
+  void _refreshSearch() => setState(() {});
+
+  List<MetroStation> _visibleStationsForLine(int line) {
     final query = _searchController.text.trim().toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredStations = _allStations;
-      } else {
-        _filteredStations = _allStations.where((station) {
-          return station.nameFa.toLowerCase().contains(query) ||
-              station.nameEn.toLowerCase().contains(query) ||
-              station.lines.any((line) => line.toString() == query);
-        }).toList();
-      }
-    });
+    final stations = _stationsByLine[line] ?? const <MetroStation>[];
+    if (query.isEmpty) return stations;
+
+    return stations.where((station) {
+      return station.nameFa.toLowerCase().contains(query) ||
+          station.nameEn.toLowerCase().contains(query) ||
+          'خط $line'.contains(query) ||
+          line.toString() == query;
+    }).toList();
+  }
+
+  int get _visibleCount {
+    var count = 0;
+    for (var line = 1; line <= 7; line++) {
+      count += _visibleStationsForLine(line).length;
+    }
+    return count;
   }
 
   @override
@@ -79,43 +93,23 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
       ),
       body: RefreshIndicator(
-        onRefresh: _loadStations,
+        onRefresh: () => _loadStations(forceRefresh: true),
         child: CustomScrollView(
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
               sliver: SliverToBoxAdapter(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(28),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topRight,
-                      end: Alignment.bottomLeft,
-                      colors: [Color(0xFF0B5FFF), Color(0xFF193B9D)],
-                    ),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('کجا می‌خواهی بروی؟', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                      SizedBox(height: 5),
-                      Text('یک ایستگاه مترو انتخاب کن', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
-                      SizedBox(height: 8),
-                      Text('بعد می‌توانی کافه، رستوران، تفریح و مکان‌های دیگر اطرافش را پیدا کنی.', style: TextStyle(color: Colors.white70, height: 1.45)),
-                    ],
-                  ),
-                ),
+                child: _HeroCard(totalStations: _allStations.length),
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
               sliver: SliverToBoxAdapter(
                 child: TextField(
                   controller: _searchController,
                   textDirection: TextDirection.rtl,
                   decoration: InputDecoration(
-                    hintText: 'جست‌وجوی نام ایستگاه...',
+                    hintText: 'جست‌وجوی نام ایستگاه یا شماره خط...',
                     prefixIcon: const Icon(Icons.search_rounded),
                     suffixIcon: _searchController.text.isEmpty
                         ? null
@@ -129,37 +123,50 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             if (_loading)
               const SliverFillRemaining(
+                hasScrollBody: false,
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (_error != null)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _ErrorState(message: _error!, onRetry: _loadStations),
+                child: _ErrorState(message: _error!, onRetry: () => _loadStations(forceRefresh: true)),
               )
-            else if (_filteredStations.isEmpty)
+            else if (_visibleCount == 0)
               const SliverFillRemaining(
                 hasScrollBody: false,
-                child: Center(child: Text('ایستگاهی با این نام پیدا نشد.')),
+                child: Center(child: Text('ایستگاهی با این عبارت پیدا نشد.')),
               )
             else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                sliver: SliverList.separated(
-                  itemCount: _filteredStations.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final station = _filteredStations[index];
-                    return _StationCard(
-                      station: station,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => CategoryScreen(station: station)),
-                        );
-                      },
-                    );
-                  },
+              for (var line = 1; line <= 7; line++) ...[
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: _LineHeader(
+                      line: line,
+                      stationCount: _visibleStationsForLine(line).length,
+                    ),
+                  ),
                 ),
-              ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  sliver: SliverList.separated(
+                    itemCount: _visibleStationsForLine(line).length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 9),
+                    itemBuilder: (context, index) {
+                      final station = _visibleStationsForLine(line)[index];
+                      return _StationCard(
+                        station: station,
+                        line: line,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => CategoryScreen(station: station)),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
           ],
         ),
       ),
@@ -167,14 +174,120 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _StationCard extends StatelessWidget {
-  final MetroStation station;
-  final VoidCallback onTap;
+class _HeroCard extends StatelessWidget {
+  final int totalStations;
 
-  const _StationCard({required this.station, required this.onTap});
+  const _HeroCard({required this.totalStations});
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [Color(0xFF0B5FFF), Color(0xFF193B9D)],
+        ),
+        boxShadow: const [BoxShadow(color: Color(0x220B5FFF), blurRadius: 24, offset: Offset(0, 10))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(Icons.directions_subway_rounded, color: Colors.white, size: 30),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('کجا می‌خواهی بروی؟', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                SizedBox(height: 4),
+                Text('ایستگاه مترو را انتخاب کن', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
+                SizedBox(height: 7),
+                Text('بعد می‌توانی مکان‌های اطراف را پیدا کنی و برایشان مسیر بگیری.', style: TextStyle(color: Colors.white70, height: 1.45)),
+              ],
+            ),
+          ),
+          if (totalStations > 0) ...[
+            const SizedBox(width: 10),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                child: Text('$totalStations', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LineHeader extends StatelessWidget {
+  final int line;
+  final int stationCount;
+
+  const _LineHeader({required this.line, required this.stationCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = metroLineColor(line);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 40,
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('خط $line', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 17)),
+                const SizedBox(height: 2),
+                Text('$stationCount ایستگاه', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+              ],
+            ),
+          ),
+          Icon(Icons.train_rounded, color: color),
+        ],
+      ),
+    );
+  }
+}
+
+class _StationCard extends StatelessWidget {
+  final MetroStation station;
+  final int line;
+  final VoidCallback onTap;
+
+  const _StationCard({required this.station, required this.line, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = metroLineColor(line);
+    final interchange = station.lines.length > 1;
+
     return Material(
       color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(20),
@@ -182,35 +295,56 @@ class _StationCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(13),
           child: Row(
             children: [
               Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                  gradient: LinearGradient(
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                    colors: [color.withValues(alpha: 0.20), color.withValues(alpha: 0.07)],
+                  ),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: color.withValues(alpha: 0.20)),
                 ),
-                child: const Icon(Icons.directions_subway_rounded),
+                child: Icon(Icons.directions_subway_rounded, color: color),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(station.nameFa, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 4),
-                    Text(
-                      station.lines.isEmpty ? 'ایستگاه مترو' : station.lines.map((e) => 'خط $e').join(' • '),
-                      textDirection: TextDirection.rtl,
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
+                    Text(station.nameFa, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 5),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (interchange)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text('تغییر خط', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                            ),
+                          ),
+                        Text(
+                          'خط $line',
+                          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_left_rounded),
+              const SizedBox(width: 10),
+              Icon(Icons.chevron_left_rounded, color: color),
             ],
           ),
         ),
