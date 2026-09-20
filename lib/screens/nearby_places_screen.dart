@@ -254,12 +254,36 @@ class _LoadingBody extends StatelessWidget {
   }
 }
 
-class _MapPanel extends StatelessWidget {
+class _MapPanel extends StatefulWidget {
   final MetroStation station;
   final List<NearbyPlace> places;
   final MapController controller;
 
-  const _MapPanel({required this.station, required this.places, required this.controller});
+  const _MapPanel({
+    required this.station,
+    required this.places,
+    required this.controller,
+  });
+
+  @override
+  State<_MapPanel> createState() => _MapPanelState();
+}
+
+class _MapPanelState extends State<_MapPanel> {
+  // Labels stay hidden at the normal overview zoom and appear only after
+  // the user zooms in enough to identify nearby places individually.
+  static const double _placeLabelZoom = 16.0;
+
+  bool _showPlaceLabels = false;
+
+  void _onPositionChanged(MapCamera camera, bool hasGesture) {
+    final shouldShowLabels = camera.zoom >= _placeLabelZoom;
+    if (shouldShowLabels == _showPlaceLabels) return;
+
+    setState(() {
+      _showPlaceLabels = shouldShowLabels;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -268,12 +292,13 @@ class _MapPanel extends StatelessWidget {
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
         child: FlutterMap(
-          mapController: controller,
+          mapController: widget.controller,
           options: MapOptions(
-            initialCenter: station.position,
+            initialCenter: widget.station.position,
             initialZoom: 14.8,
             minZoom: 11,
             maxZoom: 19,
+            onPositionChanged: _onPositionChanged,
           ),
           children: [
             TileLayer(
@@ -283,17 +308,24 @@ class _MapPanel extends StatelessWidget {
             MarkerLayer(
               markers: [
                 Marker(
-                  point: station.position,
+                  point: widget.station.position,
                   width: 48,
                   height: 48,
                   child: const _MetroMarker(),
                 ),
-                ...places.map(
+                ...widget.places.map(
                   (place) => Marker(
+                    // The coordinate is still exactly place.position. Only the
+                    // widget drawn around that coordinate gets larger when a
+                    // label is visible; the actual LatLng is never modified.
                     point: place.position,
-                    width: 38,
-                    height: 38,
-                    child: const _PlaceMarker(),
+                    width: 160,
+                    height: 80,
+                    alignment: Alignment.center,
+                    child: _PlaceMarkerWithLabel(
+                      place: place,
+                      showLabel: _showPlaceLabels,
+                    ),
                   ),
                 ),
               ],
@@ -327,19 +359,71 @@ class _MetroMarker extends StatelessWidget {
   }
 }
 
-class _PlaceMarker extends StatelessWidget {
-  const _PlaceMarker();
+class _PlaceMarkerWithLabel extends StatelessWidget {
+  final NearbyPlace place;
+  final bool showLabel;
+
+  const _PlaceMarkerWithLabel({
+    required this.place,
+    required this.showLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF0B5FFF), width: 2),
-        boxShadow: const [BoxShadow(blurRadius: 6, color: Colors.black26)],
-      ),
-      child: const Icon(Icons.place_rounded, color: Color(0xFF0B5FFF), size: 22),
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        if (showLabel)
+          Positioned(
+            top: 2,
+            left: 4,
+            right: 4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFF0B5FFF).withValues(alpha: 0.18),
+                ),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 5,
+                    spreadRadius: 0.5,
+                    color: Colors.black26,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                place.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        Center(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFF0B5FFF), width: 2),
+              boxShadow: const [BoxShadow(blurRadius: 6, color: Colors.black26)],
+            ),
+            child: const SizedBox(
+              width: 38,
+              height: 38,
+              child: Icon(Icons.place_rounded, color: Color(0xFF0B5FFF), size: 22),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

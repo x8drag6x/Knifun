@@ -19,7 +19,10 @@ class MetroAroundTehranApp extends StatelessWidget {
       title: 'نزدیک مترو',
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'sans',
+        // Traffic is registered in pubspec.yaml. Because the whole app is
+        // themed here, every Text widget inherits the Traffic family unless
+        // it explicitly overrides its own font family.
+        fontFamily: 'Traffic',
         colorScheme: ColorScheme.fromSeed(seedColor: primary),
         scaffoldBackgroundColor: const Color(0xFFF7F9FC),
         appBarTheme: const AppBarTheme(centerTitle: true, elevation: 0),
